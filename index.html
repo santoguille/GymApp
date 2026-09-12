@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#1A1E22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GymLog">
+<title>GymLog</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="iconos/icono-180.png">
+<style>
+/* Paleta: grafito frío, petróleo para acciones, latón solo para récords. */
+:root{
+  --fondo:#1A1E22; --superficie:#232930; --alta:#2D353D; --borde:#3B454E;
+  --texto:#EAEDF0; --suave:#97A2AD; --acento:#2F8296; --marca:#C79A2E;
+  --peligro:#B5473C;
+  --toque:48px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--fondo);color:var(--texto)}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  font-size:16px;line-height:1.4;
+  overscroll-behavior-y:none;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;font-size:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea,select{font-family:inherit;font-size:16px;color:var(--texto)}
+
+/* Estructura */
+#app{padding:0 16px calc(84px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
+.cabecera{
+  position:sticky;top:0;z-index:10;background:var(--fondo);
+  padding:calc(12px + env(safe-area-inset-top)) 0 10px;
+  display:flex;align-items:center;gap:10px;
+}
+.cabecera h1{font-size:28px;font-weight:700;letter-spacing:-.4px;margin:0;flex:1}
+.cabecera .atras{font-size:15px;color:var(--acento);padding:6px 2px}
+.icono-btn{
+  width:40px;height:40px;border-radius:10px;background:var(--superficie);
+  display:grid;place-items:center;font-size:17px;flex:none
+}
+
+/* Tarjetas */
+.tarjeta{background:var(--superficie);border-radius:12px;padding:14px;margin-bottom:14px}
+.tarjeta.activa{border:1px solid rgba(47,130,150,.5)}
+.p18{padding:18px}
+.etiqueta{font-size:13px;font-weight:500;color:var(--suave)}
+.titulo{font-size:19px;font-weight:600}
+.suave{color:var(--suave)}
+.fila{display:flex;align-items:center;gap:12px}
+.crece{flex:1;min-width:0}
+.corte{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Números */
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.n-grande{font-size:30px;font-weight:700}
+.n-medio{font-size:20px;font-weight:600}
+.n-peq{font-size:15px;font-weight:500}
+
+/* Datos en fila */
+.datos{display:flex}
+.datos>div{flex:1;min-width:0}
+.datos .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.datos .e{font-size:13px;font-weight:500;color:var(--suave);margin-top:2px}
+
+/* Botones */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;height:var(--toque);border-radius:8px;
+  font-size:17px;font-weight:600;background:var(--acento);color:var(--texto)
+}
+.btn:active{opacity:.75}
+.btn.sec{background:var(--alta);font-size:16px;font-weight:500;height:44px}
+.btn.fina{background:var(--alta);height:44px;font-size:15px;font-weight:500;color:var(--acento)}
+.btn.peligro{background:none;color:var(--peligro);font-weight:500;font-size:16px}
+
+/* Listas */
+.lista{background:var(--superficie);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.item{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 14px;min-height:var(--toque);width:100%;text-align:left;
+  border-bottom:1px solid var(--borde)
+}
+.item:last-child{border-bottom:0}
+.item:active{background:var(--alta)}
+.flecha{color:var(--suave);font-size:15px;flex:none}
+.mini{width:34px;height:34px;border-radius:8px;background:var(--alta);flex:none;
+      display:grid;place-items:center;font-size:15px}
+.mini:disabled{opacity:.28}
+.mini:active{opacity:.6}
+.seccion{font-size:13px;font-weight:600;color:var(--suave);padding:14px 4px 6px;letter-spacing:.2px}
+
+/* Última vez: el elemento con más peso visual de la app */
+.anterior{display:flex;gap:9px;margin:11px 0 4px}
+.anterior .barra{width:2px;background:var(--borde);border-radius:1px;flex:none}
+.anterior .cuando{font-size:12px;font-weight:500;color:var(--suave)}
+.anterior .qué{font-size:15px;font-weight:500;font-variant-numeric:tabular-nums;color:rgba(234,237,240,.85);margin-top:2px}
+
+/* Serie */
+.serie{display:flex;align-items:center;gap:13px;min-height:var(--toque);border-bottom:1px solid var(--borde);width:100%;text-align:left}
+.serie:last-child{border-bottom:0}
+.serie .n{font-size:15px;font-weight:500;color:var(--suave);width:16px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
+.serie .peso{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.serie .uni{font-size:13px;font-weight:500;color:var(--suave)}
+.serie .por{font-size:20px;color:var(--suave);margin:0 2px}
+.serie.record .peso{color:var(--marca)}
+.chip{font-size:12px;font-weight:500;color:var(--suave);background:var(--alta);padding:3px 8px;border-radius:20px;flex:none}
+.trofeo{color:var(--marca);font-size:14px;flex:none}
+
+/* Campos */
+.campo{margin-bottom:20px}
+.campo>label{display:block;font-size:13px;font-weight:500;color:var(--suave);margin-bottom:8px}
+.numerico{display:flex;gap:10px;align-items:stretch}
+.numerico .paso{
+  width:var(--toque);height:var(--toque);border-radius:8px;background:var(--alta);
+  font-size:20px;font-weight:600;display:grid;place-items:center;flex:none
+}
+.numerico .paso:active{opacity:.6}
+.numerico .caja{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:4px;
+  height:var(--toque);border-radius:8px;background:var(--alta);
+  border:2px solid transparent
+}
+.numerico .caja:focus-within{border-color:var(--acento)}
+.numerico input{
+  width:100%;min-width:0;background:none;border:0;text-align:center;
+  font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;padding:0
+}
+.numerico input:focus{outline:none}
+.numerico .sufijo{font-size:13px;font-weight:500;color:var(--suave);flex:none;padding-right:4px}
+
+.texto-campo{
+  width:100%;background:var(--alta);border:0;border-radius:8px;padding:13px 12px;
+  font-size:16px;resize:vertical
+}
+.texto-campo:focus{outline:2px solid var(--acento);outline-offset:-2px}
+
+.interruptor{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:var(--toque)}
+.interruptor input{width:52px;height:32px;flex:none;accent-color:var(--acento)}
+
+.pastillas{display:flex;flex-wrap:wrap;gap:8px}
+.pastilla{padding:9px 14px;border-radius:8px;background:var(--alta);font-size:15px}
+.pastilla.sel{background:var(--acento);font-weight:600}
+
+/* Pestañas */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  background:rgba(26,30,34,.94);backdrop-filter:blur(12px);
+  border-top:1px solid var(--borde);
+  display:flex;padding-bottom:env(safe-area-inset-bottom)
+}
+nav button{flex:1;padding:9px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--suave)}
+nav button.sel{color:var(--acento)}
+nav .g{font-size:21px;line-height:1}
+nav .t{font-size:11px;font-weight:500}
+
+/* Pantalla completa (sesión) y modales */
+.capa{position:fixed;inset:0;z-index:50;background:var(--fondo);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.capa .contenido{padding:0 16px calc(28px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
+.modal-fondo{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);display:flex;align-items:flex-end}
+.modal{
+  background:var(--fondo);width:100%;max-width:560px;margin:0 auto;
+  border-radius:16px 16px 0 0;max-height:92vh;overflow-y:auto;
+  padding-bottom:calc(16px + env(safe-area-inset-bottom))
+}
+.modal .barra-modal{
+  position:sticky;top:0;background:var(--fondo);display:flex;align-items:center;
+  padding:14px 16px;border-bottom:1px solid var(--borde);gap:12px
+}
+.modal .barra-modal .t{flex:1;text-align:center;font-size:17px;font-weight:600}
+.modal .barra-modal button{font-size:16px;color:var(--acento)}
+.modal .barra-modal button.fuerte{font-weight:600}
+.modal .cuerpo{padding:18px 16px 4px}
+
+/* Vacío */
+.vacio{text-align:center;padding:52px 24px}
+.vacio .g{font-size:34px;opacity:.5}
+.vacio h3{font-size:19px;font-weight:600;margin:12px 0 6px}
+.vacio p{color:var(--suave);margin:0}
+
+/* Gráfica */
+.grafica{width:100%;height:180px;display:block}
+.grafica .linea{fill:none;stroke:var(--acento);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.grafica .punto{fill:var(--acento)}
+.grafica .reja{stroke:var(--borde);stroke-width:1}
+.grafica text{fill:var(--suave);font-size:11px;font-variant-numeric:tabular-nums}
+
+.aviso{background:rgba(181,71,60,.13);border-radius:10px;padding:12px 14px;font-size:14px;color:#E8A79F;margin-bottom:14px}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<nav id="nav"></nav>
+<div id="capa"></div>
+<div id="modal"></div>
+
+<script>
+"use strict";
+
+/* ==========================================================================
+   ALMACENAMIENTO
+
+   Los datos viven en localStorage del navegador. Si por lo que sea no está
+   disponible (por ejemplo al ver este archivo dentro de otra app), se cae a
+   memoria: la app sigue funcionando, pero no guarda al cerrar. En ese caso
+   se avisa por pantalla, para no perder datos creyendo que están a salvo.
+   ========================================================================== */
+
+var CLAVE = "gymlog.datos.v1";
+var enMemoria = null;
+var persiste = true;
+
+function leerBruto(){
+  try{
+    var v = window.localStorage.getItem(CLAVE);
+    return v;
+  }catch(e){
+    persiste = false;
+    return enMemoria;
+  }
+}
+function escribirBruto(texto){
+  try{
+    window.localStorage.setItem(CLAVE, texto);
+    persiste = true;
+  }catch(e){
+    persiste = false;
+    enMemoria = texto;
+  }
+}
+
+var datos = { version:1, ejercicios:[], rutinas:[], entrenos:[] };
+
+function cargar(){
+  var bruto = leerBruto();
+  if(bruto){
+    try{
+      var d = JSON.parse(bruto);
+      if(d && d.ejercicios && d.rutinas && d.entrenos){ datos = d; return; }
+    }catch(e){ /* datos corruptos: mejor empezar limpio que romper la app */ }
+  }
+  // Aquí siempre se sale con un estado válido, venga el almacén vacío,
+  // a medias o directamente roto. La app nunca arranca sin datos usables.
+  datos = { version:1, ejercicios:[], rutinas:[], entrenos:[] };
+  sembrar();
+  guardar();
+}
+function guardar(){
+  escribirBruto(JSON.stringify(datos));
+}
+
+function uid(){
+  if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "id-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,10);
+}
+
+/* ==========================================================================
+   MODELO
+
+   Mismo diseño que la versión nativa y por las mismas razones:
+
+   - Los registros del historial guardan el id del ejercicio Y una copia de su
+     nombre. Renombrar o borrar un ejercicio no toca ni un entreno pasado.
+   - Cada ejercicio registrado guarda su propia fecha, repetida a propósito,
+     para poder ordenar el historial de un ejercicio sin buscar su sesión.
+   - Una rutina ES un día de entreno: nombre más lista ordenada de ids.
+   ========================================================================== */
+
+var GRUPOS = [
+  ["pecho","Pecho"], ["espalda","Espalda"], ["hombros","Hombros"],
+  ["biceps","Bíceps"], ["triceps","Tríceps"], ["cuadriceps","Cuádriceps"],
+  ["femoral","Femoral"], ["gluteos","Glúteos"], ["gemelos","Gemelos"],
+  ["abdomen","Abdomen"], ["otro","Otro"]
+];
+function nombreGrupo(clave){
+  for(var i=0;i<GRUPOS.length;i++) if(GRUPOS[i][0]===clave) return GRUPOS[i][1];
+  return "Otro";
+}
+function ordenGrupo(clave){
+  for(var i=0;i<GRUPOS.length;i++) if(GRUPOS[i][0]===clave) return i;
+  return 99;
+}
+
+function sembrar(){
+  var semilla = [
+    ["Press banca","pecho"],["Press banca inclinado","pecho"],["Press mancuernas","pecho"],
+    ["Aperturas en polea","pecho"],["Fondos en paralelas","pecho"],
+    ["Dominadas","espalda"],["Remo con barra","espalda"],["Remo en polea baja","espalda"],
+    ["Jalón al pecho","espalda"],["Remo con mancuerna","espalda"],["Peso muerto","espalda"],
+    ["Press militar","hombros"],["Press hombro con mancuernas","hombros"],
+    ["Elevaciones laterales","hombros"],["Pájaros","hombros"],["Face pull","hombros"],
+    ["Curl con barra","biceps"],["Curl con mancuernas","biceps"],["Curl martillo","biceps"],
+    ["Curl en banco inclinado","biceps"],
+    ["Extensión en polea","triceps"],["Press francés","triceps"],["Fondos en banco","triceps"],
+    ["Extensión sobre cabeza","triceps"],
+    ["Sentadilla","cuadriceps"],["Prensa","cuadriceps"],["Sentadilla búlgara","cuadriceps"],
+    ["Extensión de cuádriceps","cuadriceps"],["Zancadas","cuadriceps"],
+    ["Peso muerto rumano","femoral"],["Curl femoral tumbado","femoral"],["Curl femoral sentado","femoral"],
+    ["Hip thrust","gluteos"],["Patada de glúteo en polea","gluteos"],["Abducción de cadera","gluteos"],
+    ["Elevación de gemelos de pie","gemelos"],["Elevación de gemelos sentado","gemelos"],
+    ["Plancha","abdomen"],["Elevación de piernas","abdomen"],["Rueda abdominal","abdomen"],
+    ["Crunch en polea","abdomen"]
+  ];
+  datos.ejercicios = semilla.map(function(e){
+    return { id:uid(), nombre:e[0], grupo:e[1], notas:"", archivado:false, creado:Date.now() };
+  });
+}
+
+/* Consultas ---------------------------------------------------------------- */
+
+function ejercicioPorId(id){
+  for(var i=0;i<datos.ejercicios.length;i++)
+    if(datos.ejercicios[i].id===id) return datos.ejercicios[i];
+  return null;
+}
+function entrenoActivo(){
+  for(var i=0;i<datos.entrenos.length;i++)
+    if(!datos.entrenos[i].terminado) return datos.entrenos[i];
+  return null;
+}
+function entrenoPorId(id){
+  for(var i=0;i<datos.entrenos.length;i++)
+    if(datos.entrenos[i].id===id) return datos.entrenos[i];
+  return null;
+}
+function rutinaPorId(id){
+  for(var i=0;i<datos.rutinas.length;i++)
+    if(datos.rutinas[i].id===id) return datos.rutinas[i];
+  return null;
+}
+function terminados(){
+  return datos.entrenos.filter(function(e){ return e.terminado; })
+    .sort(function(a,b){ return b.inicio - a.inicio; });
+}
+
+/** Todas las veces que se ha hecho un ejercicio, de más reciente a más antigua. */
+function historialDe(ejercicioId){
+  var salida = [];
+  datos.entrenos.forEach(function(entreno){
+    entreno.ejercicios.forEach(function(reg){
+      if(reg.ejercicioId===ejercicioId && reg.series.length) salida.push(reg);
+    });
+  });
+  return salida.sort(function(a,b){ return b.fecha - a.fecha; });
+}
+
+/** La consulta más importante de la app: la última vez antes de una fecha. */
+function vezAnterior(ejercicioId, antesDe){
+  var h = historialDe(ejercicioId);
+  for(var i=0;i<h.length;i++) if(h[i].fecha < antesDe) return h[i];
+  return null;
+}
+
+/** Peso máximo histórico, opcionalmente solo antes de una fecha. */
+function mejorPeso(ejercicioId, antesDe){
+  var max = 0;
+  historialDe(ejercicioId).forEach(function(reg){
+    if(antesDe && reg.fecha >= antesDe) return;
+    reg.series.forEach(function(s){ if(s.peso > max) max = s.peso; });
+  });
+  return max;
+}
+
+/* Cálculos ----------------------------------------------------------------- */
+
+function volumenSerie(s){ return s.peso * s.reps; }
+function volumenRegistro(r){
+  return r.series.reduce(function(t,s){ return t + volumenSerie(s); }, 0);
+}
+function volumenEntreno(e){
+  return e.ejercicios.reduce(function(t,r){ return t + volumenRegistro(r); }, 0);
+}
+function totalSeries(e){
+  return e.ejercicios.reduce(function(t,r){ return t + r.series.length; }, 0);
+}
+function mejorSerie(r){
+  var mejor = null;
+  r.series.forEach(function(s){
+    if(!mejor) { mejor = s; return; }
+    if(s.peso > mejor.peso || (s.peso===mejor.peso && s.reps > mejor.reps)) mejor = s;
+  });
+  return mejor;
+}
+function ordenados(lista){
+  return lista.slice().sort(function(a,b){ return a.orden - b.orden; });
+}
+
+/* Formateo ----------------------------------------------------------------- */
+
+function textoPeso(v){
+  return (Math.round(v*10)/10 === Math.round(v)) ? String(Math.round(v))
+       : String(Math.round(v*10)/10).replace(".", ",");
+}
+function textoVolumen(v){
+  if(v >= 1000) return (Math.round(v/100)/10).toFixed(1).replace(".", ",") + " t";
+  return textoPeso(v) + " kg";
+}
+function textoDuracion(ms){
+  var t = Math.max(0, Math.floor(ms/1000));
+  var h = Math.floor(t/3600), m = Math.floor((t%3600)/60);
+  return h > 0 ? h + " h " + m + " min" : m + " min";
+}
+function cronometro(desde){
+  var t = Math.max(0, Math.floor((Date.now()-desde)/1000));
+  var h = Math.floor(t/3600), m = Math.floor((t%3600)/60), s = t%60;
+  var dd = function(n){ return n < 10 ? "0"+n : String(n); };
+  return h > 0 ? h + ":" + dd(m) + ":" + dd(s) : m + ":" + dd(s);
+}
+var MESES = ["enero","febrero","marzo","abril","mayo","junio","julio",
+             "agosto","septiembre","octubre","noviembre","diciembre"];
+var DIAS = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+function cap(t){ return t.charAt(0).toUpperCase() + t.slice(1); }
+function fechaCorta(ms){
+  var d = new Date(ms);
+  return d.getDate() + " " + MESES[d.getMonth()].slice(0,3);
+}
+function fechaLarga(ms){
+  var d = new Date(ms);
+  return cap(DIAS[d.getDay()]) + " " + d.getDate() + " de " + MESES[d.getMonth()];
+}
+function mesDe(ms){
+  var d = new Date(ms);
+  return cap(MESES[d.getMonth()]) + " " + d.getFullYear();
+}
+function resumenSerie(s){ return textoPeso(s.peso) + " × " + s.reps; }
+function resumenRegistro(r){
+  return ordenados(r.series).map(resumenSerie).join(", ");
+}
+
+function esc(t){
+  return String(t == null ? "" : t)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+/* ==========================================================================
+   NAVEGACIÓN
+   ========================================================================== */
+
+var vista = { pestana:"entrenar", pila:[] };  // pila: pantallas apiladas
+var enSesion = false;
+var relojes = [];
+
+function ir(pantalla){ vista.pila.push(pantalla); pinta(); }
+function volver(){ vista.pila.pop(); pinta(); }
+function pestana(p){ vista.pestana = p; vista.pila = []; pinta(); }
+
+/* ==========================================================================
+   PINTADO
+
+   Se repinta todo de golpe en cada cambio. Con estos volúmenes de datos es
+   instantáneo y evita toda la complejidad de sincronizar la pantalla a mano.
+   Los modales viven fuera de este pintado para que escribir en un campo no
+   pierda el foco.
+   ========================================================================== */
+
+function pinta(){
+  relojes.forEach(clearInterval); relojes = [];
+
+  var app = document.getElementById("app");
+  var html = "";
+
+  if(vista.pila.length){
+    html = vista.pila[vista.pila.length-1]();
+  }else if(vista.pestana === "entrenar"){
+    html = pantallaEntrenar();
+  }else if(vista.pestana === "ejercicios"){
+    html = pantallaEjercicios();
+  }else{
+    html = pantallaHistorial();
+  }
+
+  app.innerHTML = html;
+  pintaNav();
+  pintaSesion();
+  arrancaRelojes();
+}
+
+function pintaNav(){
+  var p = vista.pestana;
+  var def = [["entrenar","🏋️","Entrenar"],["ejercicios","☰","Ejercicios"],["historial","🗓","Historial"]];
+  document.getElementById("nav").innerHTML = def.map(function(d){
+    return '<button class="' + (p===d[0] && !vista.pila.length ? "sel":"") + '" '
+         + 'onclick="pestana(\'' + d[0] + '\')">'
+         + '<span class="g">' + d[1] + '</span><span class="t">' + d[2] + '</span></button>';
+  }).join("");
+}
+
+function arrancaRelojes(){
+  var nodos = document.querySelectorAll("[data-reloj]");
+  if(!nodos.length) return;
+  var tic = function(){
+    document.querySelectorAll("[data-reloj]").forEach(function(n){
+      n.textContent = cronometro(Number(n.getAttribute("data-reloj")));
+    });
+  };
+  tic();
+  relojes.push(setInterval(tic, 1000));
+}
+
+function avisoPersistencia(){
+  if(persiste) return "";
+  return '<div class="aviso">Este navegador no permite guardar datos, así que '
+       + 'lo que registres se perderá al cerrar. Instala la app en la pantalla '
+       + 'de inicio desde Safari para que guarde de verdad.</div>';
+}
+
+/* ==========================================================================
+   PANTALLA: ENTRENAR
+   ========================================================================== */
+
+function pantallaEntrenar(){
+  var activo = entrenoActivo();
+  var ultimo = terminados()[0];
+  var h = '<div class="cabecera"><h1>Entrenar</h1>'
+        + '<button class="icono-btn" onclick="ir(pantallaRutinas)" aria-label="Rutinas">⚙</button></div>'
+        + avisoPersistencia();
+
+  if(activo){
+    h += '<div class="tarjeta activa p18">'
+       + '<div class="fila" style="margin-bottom:12px">'
+       +   '<span style="width:8px;height:8px;border-radius:50%;background:var(--acento);flex:none"></span>'
+       +   '<span class="etiqueta crece">Entreno en curso</span>'
+       +   '<span class="n-peq num suave" data-reloj="' + activo.inicio + '"></span>'
+       + '</div>'
+       + '<div style="font-size:26px;font-weight:700;margin-bottom:6px">' + esc(activo.nombreRutina) + '</div>'
+       + '<div class="suave" style="margin-bottom:14px">' + activo.ejercicios.length
+       +   ' ejercicios, ' + totalSeries(activo) + ' series</div>'
+       + '<button class="btn" onclick="abreSesion()">Continuar entreno</button>'
+       + '</div>';
+  }else{
+    if(!datos.rutinas.length){
+      h += '<div class="tarjeta p18">'
+         + '<div class="titulo" style="margin-bottom:8px">Todavía no tienes rutinas</div>'
+         + '<p class="suave" style="margin:0 0 14px">Una rutina es un día de entreno: empuje, '
+         + 'pierna, lunes. Contiene los ejercicios que haces ese día y en qué orden.</p>'
+         + '<button class="btn" onclick="ir(pantallaRutinas)">Crear una rutina</button>'
+         + '</div>';
+    }else{
+      h += '<div class="seccion">Empezar con una rutina</div>';
+      datos.rutinas.forEach(function(r){
+        var nombres = r.ejercicioIds.map(function(id){
+          var e = ejercicioPorId(id); return e ? e.nombre : null;
+        }).filter(Boolean);
+        h += '<button class="tarjeta fila" style="width:100%;text-align:left" '
+           + 'onclick="empezar(\'' + r.id + '\')">'
+           + '<span class="crece">'
+           +   '<span class="titulo" style="display:block">' + esc(r.nombre) + '</span>'
+           +   '<span class="etiqueta corte" style="display:block">'
+           +     (nombres.length ? esc(nombres.join(", ")) : "Sin ejercicios") + '</span>'
+           + '</span>'
+           + '<span style="color:var(--acento);font-size:14px">▶</span>'
+           + '</button>';
+      });
+    }
+    h += '<button class="btn sec" onclick="empezar(null)">Entreno libre</button>';
+  }
+
+  if(ultimo){
+    h += '<div class="seccion">Último entreno</div>'
+       + '<div class="tarjeta p18">'
+       + '<div class="fila" style="margin-bottom:12px">'
+       +   '<span class="titulo crece">' + esc(ultimo.nombreRutina) + '</span>'
+       +   '<span class="etiqueta">' + fechaCorta(ultimo.inicio) + '</span>'
+       + '</div>'
+       + datosFila([
+           ["Series", String(totalSeries(ultimo))],
+           ["Volumen", textoVolumen(volumenEntreno(ultimo))],
+           ["Duración", textoDuracion((ultimo.fin||ultimo.inicio) - ultimo.inicio)]
+         ])
+       + '</div>';
+  }
+  return h;
+}
+
+function datosFila(pares){
+  return '<div class="datos">' + pares.map(function(p){
+    return '<div><div class="v">' + p[1] + '</div><div class="e">' + p[0] + '</div></div>';
+  }).join("") + '</div>';
+}
+
+/* ==========================================================================
+   PANTALLA: RUTINAS
+   ========================================================================== */
+
+function pantallaRutinas(){
+  var h = '<div class="cabecera">'
+        + '<button class="atras" onclick="volver()">‹ Atrás</button>'
+        + '<h1 style="font-size:22px">Rutinas</h1>'
+        + '<button class="icono-btn" onclick="creaRutina()" aria-label="Nueva">+</button></div>';
+
+  if(!datos.rutinas.length){
+    return h + vacio("📋","Sin rutinas",
+      "Una rutina es un día de entreno. Contiene los ejercicios que haces ese día y el orden en que los haces.");
+  }
+  h += '<div class="lista">';
+  datos.rutinas.forEach(function(r){
+    h += '<button class="item" onclick="verRutina(\'' + r.id + '\')">'
+       + '<span class="crece"><span class="titulo" style="display:block">' + esc(r.nombre) + '</span>'
+       + '<span class="etiqueta">' + r.ejercicioIds.length + ' ejercicios</span></span>'
+       + '<span class="flecha">›</span></button>';
+  });
+  return h + '</div>';
+}
+
+function creaRutina(){
+  var r = { id:uid(), nombre:"Nueva rutina", ejercicioIds:[], notas:"", creada:Date.now() };
+  datos.rutinas.push(r); guardar(); verRutina(r.id);
+}
+function verRutina(id){
+  ir(function(){ return pantallaDetalleRutina(id); });
+}
+
+function pantallaDetalleRutina(id){
+  var r = rutinaPorId(id);
+  if(!r) return '<div class="cabecera"><button class="atras" onclick="volver()">‹ Atrás</button></div>';
+
+  var h = '<div class="cabecera">'
+        + '<button class="atras" onclick="volver()">‹ Rutinas</button>'
+        + '<h1 style="font-size:22px" class="corte">Rutina</h1></div>';
+
+  h += '<div class="campo"><label>Nombre</label>'
+     + '<input class="texto-campo" value="' + esc(r.nombre) + '" '
+     + 'onchange="renombraRutina(\'' + r.id + '\', this.value)"></div>';
+
+  h += '<div class="seccion">Ejercicios</div>';
+  if(!r.ejercicioIds.length){
+    h += '<div class="tarjeta suave">Añade los ejercicios de este día.</div>';
+  }else{
+    h += '<div class="lista">';
+    r.ejercicioIds.forEach(function(eid, i){
+      var e = ejercicioPorId(eid);
+      if(!e) return;
+      h += '<div class="item">'
+         + '<span class="n-peq num suave" style="width:20px;text-align:right">' + (i+1) + '</span>'
+         + '<span class="crece"><span style="display:block">' + esc(e.nombre) + '</span>'
+         + '<span class="etiqueta">' + nombreGrupo(e.grupo) + '</span></span>'
+         + botonOrden(r.id, i, -1, "↑", i === 0)
+         + botonOrden(r.id, i, 1, "↓", i === r.ejercicioIds.length - 1)
+         + '<button class="mini" style="background:none;color:var(--peligro)" '
+         +   'onclick="quitaDeRutina(\'' + r.id + '\',' + i + ')" aria-label="Quitar">✕</button>'
+         + '</div>';
+    });
+    h += '</div>';
+  }
+  h += '<button class="btn fina" onclick="selectorParaRutina(\'' + r.id + '\')">＋ Añadir ejercicios</button>';
+
+  h += '<div class="campo" style="margin-top:22px"><label>Notas</label>'
+     + '<textarea class="texto-campo" rows="3" placeholder="Opcional" '
+     + 'onchange="notasRutina(\'' + r.id + '\', this.value)">' + esc(r.notas) + '</textarea></div>';
+
+  h += '<button class="btn peligro" onclick="borraRutina(\'' + r.id + '\')">Eliminar esta rutina</button>';
+  return h;
+}
+
+function botonOrden(rutinaId, i, d, glifo, apagado){
+  return '<button class="mini"' + (apagado ? ' disabled' : '')
+       + ' onclick="mueveEnRutina(\'' + rutinaId + '\',' + i + ',' + d + ')"'
+       + ' aria-label="Mover">' + glifo + '</button>';
+}
+
+function renombraRutina(id, v){
+  var r = rutinaPorId(id); if(!r) return;
+  r.nombre = v.trim() || "Rutina sin nombre"; guardar(); pinta();
+}
+function notasRutina(id, v){
+  var r = rutinaPorId(id); if(!r) return;
+  r.notas = v; guardar();
+}
+function mueveEnRutina(id, i, d){
+  var r = rutinaPorId(id); if(!r) return;
+  var j = i + d;
+  if(j < 0 || j >= r.ejercicioIds.length) return;
+  var t = r.ejercicioIds[i]; r.ejercicioIds[i] = r.ejercicioIds[j]; r.ejercicioIds[j] = t;
+  guardar(); pinta();
+}
+function quitaDeRutina(id, i){
+  var r = rutinaPorId(id); if(!r) return;
+  r.ejercicioIds.splice(i,1); guardar(); pinta();
+}
+function borraRutina(id){
+  if(!confirm("¿Eliminar esta rutina? Los entrenos que ya hayas hecho con ella se conservan.")) return;
+  datos.rutinas = datos.rutinas.filter(function(r){ return r.id !== id; });
+  guardar(); volver();
+}
+function selectorParaRutina(id){
+  abreSelector(rutinaPorId(id).ejercicioIds, function(elegidos){
+    var r = rutinaPorId(id);
+    r.ejercicioIds = r.ejercicioIds.concat(elegidos);
+    guardar(); pinta();
+  });
+}
+
+/* ==========================================================================
+   SESIÓN DE ENTRENO
+   ========================================================================== */
+
+function empezar(rutinaId){
+  if(entrenoActivo()){ abreSesion(); return; }
+  var r = rutinaId ? rutinaPorId(rutinaId) : null;
+  var ahora = Date.now();
+  var entreno = {
+    id:uid(), inicio:ahora, fin:null, terminado:false,
+    nombreRutina: r ? r.nombre : "Entreno libre", notas:"", ejercicios:[]
+  };
+  if(r){
+    r.ejercicioIds.forEach(function(eid, i){
+      var e = ejercicioPorId(eid);
+      if(!e) return;
+      entreno.ejercicios.push({
+        id:uid(), ejercicioId:eid, nombreEjercicio:e.nombre,
+        orden:i, fecha:ahora, series:[]
+      });
+    });
+  }
+  datos.entrenos.push(entreno);
+  guardar();
+  abreSesion();
+}
+
+function abreSesion(){ enSesion = true; pinta(); }
+function cierraSesion(){ enSesion = false; pinta(); }
+
+function pintaSesion(){
+  var capa = document.getElementById("capa");
+  var activo = entrenoActivo();
+  if(!enSesion || !activo){ capa.innerHTML = ""; return; }
+
+  var h = '<div class="contenido">'
+        + '<div class="cabecera">'
+        +   '<button class="atras" onclick="cierraSesion()">‹ Minimizar</button>'
+        +   '<h1 style="font-size:20px" class="corte">' + esc(activo.nombreRutina) + '</h1>'
+        + '</div>';
+
+  h += '<div class="tarjeta">' + datosFila([
+         ["Tiempo", '<span class="num" data-reloj="' + activo.inicio + '"></span>'],
+         ["Series", String(totalSeries(activo))],
+         ["Volumen", textoVolumen(volumenEntreno(activo))]
+       ]) + '</div>';
+
+  ordenados(activo.ejercicios).forEach(function(reg){
+    h += bloqueEjercicio(reg, activo);
+  });
+
+  h += '<button class="btn sec" onclick="selectorParaSesion()">＋ Añadir ejercicio</button>'
+     + '<div style="height:10px"></div>'
+     + '<button class="btn" onclick="terminaEntreno()">Terminar entreno</button>'
+     + '<button class="btn peligro" style="margin-top:6px" onclick="descartaEntreno()">Descartar entreno</button>'
+     + '</div>';
+
+  capa.innerHTML = '<div class="capa">' + h + '</div>';
+}
+
+function bloqueEjercicio(reg, entreno){
+  var anterior = vezAnterior(reg.ejercicioId, reg.fecha);
+  var record = mejorPeso(reg.ejercicioId, reg.fecha);
+
+  var h = '<div class="tarjeta">'
+        + '<div class="fila">'
+        +   '<span class="crece" style="font-size:18px;font-weight:600">' + esc(reg.nombreEjercicio) + '</span>'
+        +   (reg.series.length ? '<span class="etiqueta">' + textoVolumen(volumenRegistro(reg)) + '</span>' : "")
+        + '</div>';
+
+  /* La línea que da sentido a toda la app. */
+  if(anterior){
+    h += '<div class="anterior"><div class="barra"></div><div>'
+       + '<div class="cuando">Última vez, ' + fechaCorta(anterior.fecha) + '</div>'
+       + '<div class="qué">' + resumenRegistro(anterior) + '</div>'
+       + '</div></div>';
+  }
+
+  if(!reg.series.length){
+    h += '<div class="suave" style="padding:12px 0">Sin series todavía</div>';
+  }else{
+    h += '<div style="padding:4px 0">';
+    ordenados(reg.series).forEach(function(s, i){
+      var esRecord = record > 0 && s.peso > record;
+      h += '<button class="serie' + (esRecord ? " record":"") + '" '
+         + 'onclick="editaSerie(\'' + reg.id + '\',\'' + s.id + '\')">'
+         + '<span class="n">' + (i+1) + '</span>'
+         + '<span class="fila" style="gap:4px;align-items:baseline">'
+         +   '<span class="peso">' + textoPeso(s.peso) + '</span>'
+         +   '<span class="uni">kg</span><span class="por">×</span>'
+         +   '<span class="peso">' + s.reps + '</span>'
+         + '</span>'
+         + '<span class="crece"></span>'
+         + (esRecord ? '<span class="trofeo">🏆</span>' : "")
+         + (s.rir != null ? '<span class="chip">RIR ' + s.rir + '</span>' : "")
+         + '</button>';
+    });
+    h += '</div>';
+  }
+
+  h += '<div class="fila" style="gap:10px;margin-top:6px">'
+     + '<button class="btn fina" onclick="nuevaSerie(\'' + reg.id + '\')">＋ Añadir serie</button>'
+     + (reg.series.length
+        ? '<button class="btn fina" style="width:56px;flex:none;color:var(--texto)" '
+          + 'onclick="repiteSerie(\'' + reg.id + '\')" aria-label="Repetir última">⟳</button>'
+        : "")
+     + '</div>';
+
+  h += '<div style="margin-top:8px;text-align:right">'
+     + '<button class="etiqueta" style="color:var(--peligro);padding:6px 2px" '
+     + 'onclick="quitaEjercicioSesion(\'' + reg.id + '\')">Quitar ejercicio</button></div>';
+
+  return h + '</div>';
+}
+
+function registroPorId(id){
+  var a = entrenoActivo();
+  if(!a) return null;
+  for(var i=0;i<a.ejercicios.length;i++) if(a.ejercicios[i].id===id) return a.ejercicios[i];
+  return null;
+}
+
+function selectorParaSesion(){
+  abreSelector([], function(elegidos){
+    var a = entrenoActivo(); if(!a) return;
+    var max = a.ejercicios.reduce(function(m,r){ return Math.max(m, r.orden); }, -1);
+    elegidos.forEach(function(eid){
+      var e = ejercicioPorId(eid); if(!e) return;
+      max += 1;
+      a.ejercicios.push({
+        id:uid(), ejercicioId:eid, nombreEjercicio:e.nombre,
+        orden:max, fecha:a.inicio, series:[]
+      });
+    });
+    guardar(); pinta();
+  });
+}
+
+function quitaEjercicioSesion(regId){
+  var reg = registroPorId(regId); if(!reg) return;
+  if(reg.series.length && !confirm("Este ejercicio tiene " + reg.series.length
+      + " series registradas. ¿Quitarlo del entreno?")) return;
+  var a = entrenoActivo();
+  a.ejercicios = a.ejercicios.filter(function(r){ return r.id !== regId; });
+  guardar(); pinta();
+}
+
+function repiteSerie(regId){
+  var reg = registroPorId(regId); if(!reg) return;
+  var ult = ordenados(reg.series)[reg.series.length-1];
+  var max = reg.series.reduce(function(m,s){ return Math.max(m, s.orden); }, -1);
+  reg.series.push({ id:uid(), peso:ult.peso, reps:ult.reps, rir:ult.rir, orden:max+1 });
+  guardar(); pinta();
+}
+
+function terminaEntreno(){
+  var a = entrenoActivo(); if(!a) return;
+  var n = totalSeries(a);
+  if(!n){
+    if(!confirm("No has registrado ninguna serie. ¿Descartar el entreno?")) return;
+    return descartaEntreno(true);
+  }
+  if(!confirm("Se guardarán " + n + " series. Los ejercicios sin ninguna serie no se guardarán.")) return;
+  a.ejercicios = a.ejercicios.filter(function(r){ return r.series.length; });
+  a.fin = Date.now();
+  a.terminado = true;
+  guardar();
+  enSesion = false;
+  pinta();
+}
+
+function descartaEntreno(sinPreguntar){
+  var a = entrenoActivo(); if(!a) return;
+  if(!sinPreguntar && !confirm("Se borrará todo lo que has registrado en esta sesión. No se puede deshacer.")) return;
+  datos.entrenos = datos.entrenos.filter(function(e){ return e.id !== a.id; });
+  guardar();
+  enSesion = false;
+  pinta();
+}
+
+/* ==========================================================================
+   MODAL: SERIE
+   ========================================================================== */
+
+var modalEstado = null;
+
+function nuevaSerie(regId){
+  var reg = registroPorId(regId); if(!reg) return;
+  var ult = ordenados(reg.series)[reg.series.length-1];
+  var base;
+  if(ult){
+    base = { peso:ult.peso, reps:ult.reps, rir:ult.rir };
+  }else{
+    var ant = vezAnterior(reg.ejercicioId, reg.fecha);
+    var p = ant ? ordenados(ant.series)[0] : null;
+    base = p ? { peso:p.peso, reps:p.reps, rir:p.rir } : { peso:20, reps:10, rir:null };
+  }
+  modalEstado = { regId:regId, serieId:null, peso:base.peso, reps:base.reps,
+                  usaRir: base.rir != null, rir: base.rir == null ? 2 : base.rir };
+  pintaModalSerie();
+}
+
+function editaSerie(regId, serieId){
+  var reg = registroPorId(regId); if(!reg) return;
+  var s = null;
+  reg.series.forEach(function(x){ if(x.id===serieId) s = x; });
+  if(!s) return;
+  modalEstado = { regId:regId, serieId:serieId, peso:s.peso, reps:s.reps,
+                  usaRir: s.rir != null, rir: s.rir == null ? 2 : s.rir };
+  pintaModalSerie();
+}
+
+function pintaModalSerie(){
+  var m = modalEstado;
+  var h = '<div class="modal-fondo" onclick="if(event.target===this)cierraModal()">'
+        + '<div class="modal">'
+        + '<div class="barra-modal">'
+        +   '<button onclick="cierraModal()">Cancelar</button>'
+        +   '<span class="t">' + (m.serieId ? "Editar serie" : "Nueva serie") + '</span>'
+        +   '<button class="fuerte" onclick="guardaSerie()">Guardar</button>'
+        + '</div><div class="cuerpo">'
+
+        + campoNumerico("Peso", "peso", m.peso, 2.5, "kg", true)
+        + campoNumerico("Repeticiones", "reps", m.reps, 1, "", false)
+
+        + '<div class="interruptor">'
+        +   '<span>Repeticiones en reserva</span>'
+        +   '<input type="checkbox" ' + (m.usaRir ? "checked" : "")
+        +     ' onchange="modalEstado.usaRir=this.checked;pintaModalSerie()">'
+        + '</div>'
+        + (m.usaRir ? campoNumerico("RIR", "rir", m.rir, 1, "", false) : "");
+
+  if(m.serieId){
+    h += '<button class="btn peligro" style="margin-top:10px" onclick="borraSerie()">Eliminar serie</button>';
+  }
+  h += '</div></div></div>';
+  document.getElementById("modal").innerHTML = h;
+}
+
+function campoNumerico(etiqueta, clave, valor, paso, sufijo, decimal){
+  return '<div class="campo"><label>' + etiqueta + '</label><div class="numerico">'
+    + '<button class="paso" onclick="ajusta(\'' + clave + '\',' + (-paso) + ')">−</button>'
+    + '<div class="caja">'
+    +   '<input type="text" inputmode="' + (decimal ? "decimal" : "numeric") + '" '
+    +     'value="' + (decimal ? textoPeso(valor) : valor) + '" '
+    +     'onfocus="this.select()" '
+    +     'oninput="escribe(\'' + clave + '\', this.value)">'
+    +   (sufijo ? '<span class="sufijo">' + sufijo + '</span>' : "")
+    + '</div>'
+    + '<button class="paso" onclick="ajusta(\'' + clave + '\',' + paso + ')">+</button>'
+    + '</div></div>';
+}
+
+function escribe(clave, texto){
+  var v = parseFloat(String(texto).replace(",", "."));
+  if(isNaN(v)) return;                 // dejo escribir sin repintar: no pierde el foco
+  modalEstado[clave] = v;
+}
+function ajusta(clave, d){
+  var v = (modalEstado[clave] || 0) + d;
+  if(clave === "reps") v = Math.max(1, Math.round(v));
+  if(clave === "rir")  v = Math.min(10, Math.max(0, Math.round(v)));
+  if(clave === "peso") v = Math.max(0, Math.round(v*10)/10);
+  modalEstado[clave] = v;
+  pintaModalSerie();
+}
+
+function guardaSerie(){
+  var m = modalEstado;
+  var reg = registroPorId(m.regId);
+  if(!reg){ cierraModal(); return; }
+  var reps = Math.max(1, Math.round(m.reps || 1));
+  var rir = m.usaRir ? Math.round(m.rir) : null;
+
+  if(m.serieId){
+    reg.series.forEach(function(s){
+      if(s.id === m.serieId){ s.peso = m.peso; s.reps = reps; s.rir = rir; }
+    });
+  }else{
+    var max = reg.series.reduce(function(t,s){ return Math.max(t, s.orden); }, -1);
+    reg.series.push({ id:uid(), peso:m.peso, reps:reps, rir:rir, orden:max+1 });
+  }
+  guardar(); cierraModal(); pinta();
+}
+
+function borraSerie(){
+  var m = modalEstado;
+  var reg = registroPorId(m.regId);
+  if(reg) reg.series = reg.series.filter(function(s){ return s.id !== m.serieId; });
+  guardar(); cierraModal(); pinta();
+}
+
+function cierraModal(){
+  modalEstado = null;
+  document.getElementById("modal").innerHTML = "";
+}
+
+/* ==========================================================================
+   MODAL: SELECTOR DE EJERCICIOS
+   ========================================================================== */
+
+var selector = null;
+
+function abreSelector(yaElegidos, alConfirmar){
+  selector = { ya:yaElegidos || [], elegidos:[], busqueda:"", alConfirmar:alConfirmar };
+  pintaSelector();
+}
+
+function pintaSelector(){
+  var s = selector;
+  var libres = datos.ejercicios.filter(function(e){
+    return !e.archivado && s.ya.indexOf(e.id) < 0;
+  });
+  if(s.busqueda){
+    var q = s.busqueda.toLowerCase();
+    libres = libres.filter(function(e){ return e.nombre.toLowerCase().indexOf(q) >= 0; });
+  }
+  libres.sort(function(a,b){
+    var d = ordenGrupo(a.grupo) - ordenGrupo(b.grupo);
+    return d !== 0 ? d : a.nombre.localeCompare(b.nombre, "es");
+  });
+
+  var h = '<div class="modal-fondo" onclick="if(event.target===this)cierraSelector()">'
+        + '<div class="modal" style="max-height:88vh">'
+        + '<div class="barra-modal">'
+        +   '<button onclick="cierraSelector()">Cancelar</button>'
+        +   '<span class="t">Añadir ejercicios</span>'
+        +   '<button class="fuerte" onclick="confirmaSelector()"'
+        +     (s.elegidos.length ? "" : " disabled style=\"opacity:.4\"") + '>'
+        +     'Añadir' + (s.elegidos.length ? " (" + s.elegidos.length + ")" : "") + '</button>'
+        + '</div><div class="cuerpo">'
+        + '<input class="texto-campo" style="margin-bottom:14px" placeholder="Buscar ejercicio" '
+        +   'value="' + esc(s.busqueda) + '" oninput="filtraSelector(this.value)">';
+
+  if(!libres.length){
+    h += '<div class="vacio"><div class="g">🔍</div><h3>'
+       + (s.busqueda ? "Sin resultados" : "No queda nada por añadir")
+       + '</h3><p>' + (s.busqueda
+          ? "Prueba con otro nombre, o créalo desde la pestaña Ejercicios."
+          : "Ya has añadido todos los ejercicios de la biblioteca.") + '</p></div>';
+  }else{
+    var grupoActual = null;
+    h += '<div class="lista">';
+    libres.forEach(function(e){
+      if(e.grupo !== grupoActual){
+        grupoActual = e.grupo;
+        h += '<div class="item" style="background:var(--alta);min-height:0;padding:8px 14px">'
+           + '<span class="etiqueta">' + nombreGrupo(e.grupo) + '</span></div>';
+      }
+      var pos = s.elegidos.indexOf(e.id);
+      h += '<button class="item" onclick="alternaSelector(\'' + e.id + '\')">'
+         + '<span class="crece">' + esc(e.nombre) + '</span>'
+         + (pos >= 0
+            ? '<span style="width:24px;height:24px;border-radius:50%;background:var(--acento);'
+              + 'display:grid;place-items:center;font-size:13px;font-weight:600;flex:none">'
+              + (pos+1) + '</span>'
+            : '')
+         + '</button>';
+    });
+    h += '</div>';
+  }
+  h += '</div></div></div>';
+  document.getElementById("modal").innerHTML = h;
+}
+
+function filtraSelector(v){
+  selector.busqueda = v;
+  var libres = document.querySelector("#modal .lista");
+  // Repinto solo si hace falta; el campo mantiene el foco porque lo reinserto con su valor.
+  var foco = document.activeElement;
+  var pos = foco && foco.selectionStart;
+  pintaSelector();
+  var nuevo = document.querySelector("#modal .cuerpo input");
+  if(nuevo){ nuevo.focus(); try{ nuevo.setSelectionRange(pos,pos); }catch(e){} }
+}
+function alternaSelector(id){
+  var i = selector.elegidos.indexOf(id);
+  if(i >= 0) selector.elegidos.splice(i,1); else selector.elegidos.push(id);
+  pintaSelector();
+}
+function confirmaSelector(){
+  if(!selector.elegidos.length) return;
+  var cb = selector.alConfirmar, elegidos = selector.elegidos;
+  cierraSelector();
+  cb(elegidos);
+}
+function cierraSelector(){
+  selector = null;
+  document.getElementById("modal").innerHTML = "";
+}
+
+/* ==========================================================================
+   PANTALLA: EJERCICIOS
+   ========================================================================== */
+
+var filtroEjercicios = { busqueda:"", archivados:false };
+
+function pantallaEjercicios(){
+  var f = filtroEjercicios;
+  var lista = datos.ejercicios.filter(function(e){
+    return f.archivados ? e.archivado : !e.archivado;
+  });
+  if(f.busqueda){
+    var q = f.busqueda.toLowerCase();
+    lista = lista.filter(function(e){ return e.nombre.toLowerCase().indexOf(q) >= 0; });
+  }
+  lista.sort(function(a,b){
+    var d = ordenGrupo(a.grupo) - ordenGrupo(b.grupo);
+    return d !== 0 ? d : a.nombre.localeCompare(b.nombre, "es");
+  });
+
+  var h = '<div class="cabecera"><h1>Ejercicios</h1>'
+        + '<button class="icono-btn" onclick="alternaArchivados()" '
+        +   'style="' + (f.archivados ? "color:var(--acento)" : "") + '" aria-label="Archivados">🗄</button>'
+        + '<button class="icono-btn" onclick="editaEjercicio(null)" aria-label="Nuevo">+</button></div>'
+        + '<input class="texto-campo" style="margin-bottom:14px" placeholder="Buscar ejercicio" '
+        +   'value="' + esc(f.busqueda) + '" oninput="buscaEjercicio(this.value)">';
+
+  if(!lista.length){
+    return h + vacio(f.archivados ? "🗄" : "🏋️",
+      f.archivados ? "Nada archivado" : (f.busqueda ? "Sin resultados" : "Sin ejercicios"),
+      f.archivados ? "Los ejercicios que archives aparecerán aquí, con su historial intacto."
+        : (f.busqueda ? "No hay ningún ejercicio con ese nombre. Puedes crearlo."
+                      : "Crea tu primer ejercicio con el botón de arriba."));
+  }
+
+  var grupoActual = null;
+  lista.forEach(function(e){
+    if(e.grupo !== grupoActual){
+      if(grupoActual !== null) h += '</div>';
+      grupoActual = e.grupo;
+      h += '<div class="seccion">' + nombreGrupo(e.grupo) + '</div><div class="lista">';
+    }
+    h += '<button class="item" onclick="verEjercicio(\'' + e.id + '\')">'
+       + '<span class="crece">' + esc(e.nombre) + '</span>'
+       + '<span class="flecha">›</span></button>';
+  });
+  return h + '</div>';
+}
+
+function buscaEjercicio(v){
+  filtroEjercicios.busqueda = v;
+  var pos = document.activeElement && document.activeElement.selectionStart;
+  pinta();
+  var campo = document.querySelector("#app input.texto-campo");
+  if(campo){ campo.focus(); try{ campo.setSelectionRange(pos,pos); }catch(e){} }
+}
+function alternaArchivados(){
+  filtroEjercicios.archivados = !filtroEjercicios.archivados;
+  pinta();
+}
+function verEjercicio(id){
+  ir(function(){ return pantallaDetalleEjercicio(id); });
+}
+
+/* Editor ------------------------------------------------------------------- */
+
+var editor = null;
+
+function editaEjercicio(id){
+  var e = id ? ejercicioPorId(id) : null;
+  editor = e ? { id:e.id, nombre:e.nombre, grupo:e.grupo, notas:e.notas }
+             : { id:null, nombre:"", grupo:"pecho", notas:"" };
+  pintaEditor();
+}
+
+function pintaEditor(){
+  var e = editor;
+  var h = '<div class="modal-fondo" onclick="if(event.target===this)cierraEditor()">'
+        + '<div class="modal"><div class="barra-modal">'
+        +   '<button onclick="cierraEditor()">Cancelar</button>'
+        +   '<span class="t">' + (e.id ? "Editar ejercicio" : "Nuevo ejercicio") + '</span>'
+        +   '<button class="fuerte" onclick="guardaEjercicio()">Guardar</button>'
+        + '</div><div class="cuerpo">'
+        + '<div class="campo"><label>Nombre</label>'
+        +   '<input class="texto-campo" value="' + esc(e.nombre) + '" '
+        +   'oninput="editor.nombre=this.value"></div>'
+        + '<div class="campo"><label>Grupo muscular</label><div class="pastillas">'
+        + GRUPOS.map(function(g){
+            return '<button class="pastilla' + (e.grupo===g[0] ? " sel":"") + '" '
+                 + 'onclick="editor.grupo=\'' + g[0] + '\';pintaEditor()">' + g[1] + '</button>';
+          }).join("")
+        + '</div></div>'
+        + '<div class="campo"><label>Notas</label>'
+        +   '<textarea class="texto-campo" rows="3" placeholder="Altura del asiento, agarre, técnica..." '
+        +   'oninput="editor.notas=this.value">' + esc(e.notas) + '</textarea></div>'
+        + '</div></div></div>';
+  document.getElementById("modal").innerHTML = h;
+}
+
+function guardaEjercicio(){
+  var e = editor;
+  var nombre = (e.nombre || "").trim();
+  if(!nombre){ alert("Ponle un nombre al ejercicio."); return; }
+  if(e.id){
+    var ex = ejercicioPorId(e.id);
+    ex.nombre = nombre; ex.grupo = e.grupo; ex.notas = e.notas;
+  }else{
+    datos.ejercicios.push({
+      id:uid(), nombre:nombre, grupo:e.grupo, notas:e.notas,
+      archivado:false, creado:Date.now()
+    });
+  }
+  guardar(); cierraEditor(); pinta();
+}
+function cierraEditor(){
+  editor = null;
+  document.getElementById("modal").innerHTML = "";
+}
+
+/* Ficha de ejercicio ------------------------------------------------------- */
+
+var metrica = "peso";
+
+function pantallaDetalleEjercicio(id){
+  var e = ejercicioPorId(id);
+  if(!e) return '<div class="cabecera"><button class="atras" onclick="volver()">‹ Atrás</button></div>';
+
+  var hist = historialDe(id);
+  var record = mejorPeso(id);
+
+  var h = '<div class="cabecera">'
+        + '<button class="atras" onclick="volver()">‹ Ejercicios</button>'
+        + '<h1 style="font-size:20px" class="corte crece">' + esc(e.nombre) + '</h1>'
+        + '<button class="icono-btn" onclick="editaEjercicio(\'' + id + '\')" aria-label="Editar">✎</button>'
+        + '</div>';
+
+  h += '<div class="tarjeta p18">' + datosFila([
+         ["Mejor peso", record > 0
+            ? '<span style="color:var(--marca)">' + textoPeso(record) + ' kg</span>' : "—"],
+         ["Sesiones", String(hist.length)],
+         ["Última vez", hist.length ? fechaCorta(hist[0].fecha) : "—"]
+       ]) + '</div>';
+
+  if(e.notas){
+    h += '<div class="tarjeta"><div class="etiqueta" style="margin-bottom:5px">Notas</div>'
+       + esc(e.notas) + '</div>';
+  }
+
+  var puntos = hist.slice().sort(function(a,b){ return a.fecha - b.fecha; })
+    .map(function(r){
+      return { fecha:r.fecha,
+               valor: metrica === "peso" ? (mejorSerie(r) ? mejorSerie(r).peso : 0)
+                                         : volumenRegistro(r) };
+    });
+
+  if(puntos.length >= 2){
+    h += '<div class="tarjeta p18">'
+       + '<div class="pastillas" style="margin-bottom:14px">'
+       +   '<button class="pastilla' + (metrica==="peso" ? " sel":"") + '" '
+       +     'onclick="metrica=\'peso\';pinta()">Peso máximo</button>'
+       +   '<button class="pastilla' + (metrica==="volumen" ? " sel":"") + '" '
+       +     'onclick="metrica=\'volumen\';pinta()">Volumen</button>'
+       + '</div>'
+       + dibujaGrafica(puntos)
+       + '</div>';
+  }
+
+  h += '<div class="seccion">Historial</div>';
+  if(!hist.length){
+    h += '<div class="tarjeta suave">Todavía no has hecho este ejercicio. Aparecerá aquí '
+       + 'en cuanto registres la primera serie.</div>';
+  }else{
+    hist.forEach(function(r){
+      h += '<div class="tarjeta" style="padding:12px">'
+         + '<div class="fila" style="margin-bottom:4px">'
+         +   '<span class="crece" style="font-size:14px;font-weight:600">' + fechaCorta(r.fecha) + '</span>'
+         +   '<span class="etiqueta">' + textoVolumen(volumenRegistro(r)) + '</span>'
+         + '</div>'
+         + '<div class="n-peq num" style="color:rgba(234,237,240,.85)">' + resumenRegistro(r) + '</div>'
+         + '</div>';
+    });
+  }
+
+  h += '<button class="btn sec" style="margin-top:6px" onclick="archiva(\'' + id + '\')">'
+     + (e.archivado ? "Desarchivar ejercicio" : "Archivar ejercicio") + '</button>'
+     + '<button class="btn peligro" onclick="borraEjercicio(\'' + id + '\')">Eliminar ejercicio</button>';
+  return h;
+}
+
+/** Gráfica de líneas en SVG. Sin librerías: son treinta líneas de geometría. */
+function dibujaGrafica(puntos){
+  var W = 320, H = 160, ML = 38, MR = 6, MT = 10, MB = 22;
+  var vals = puntos.map(function(p){ return p.valor; });
+  var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+  if(min === max){ min = Math.max(0, min - 1); max = max + 1; }
+  var pad = (max - min) * 0.12;
+  min = Math.max(0, min - pad); max = max + pad;
+
+  var x = function(i){
+    return puntos.length === 1 ? ML + (W-ML-MR)/2
+      : ML + (i/(puntos.length-1)) * (W-ML-MR);
+  };
+  var y = function(v){ return MT + (1 - (v-min)/(max-min)) * (H-MT-MB); };
+
+  var svg = '<svg class="grafica" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">';
+
+  /* Tres líneas de reja con su valor */
+  for(var k=0;k<3;k++){
+    var v = min + (max-min) * k/2;
+    var yy = y(v);
+    svg += '<line class="reja" x1="' + ML + '" y1="' + yy.toFixed(1)
+         + '" x2="' + (W-MR) + '" y2="' + yy.toFixed(1) + '"/>'
+         + '<text x="' + (ML-6) + '" y="' + (yy+3.5).toFixed(1) + '" text-anchor="end">'
+         + textoPeso(Math.round(v)) + '</text>';
+  }
+
+  svg += '<polyline class="linea" points="'
+       + puntos.map(function(p,i){ return x(i).toFixed(1) + "," + y(p.valor).toFixed(1); }).join(" ")
+       + '"/>';
+  puntos.forEach(function(p,i){
+    svg += '<circle class="punto" cx="' + x(i).toFixed(1) + '" cy="' + y(p.valor).toFixed(1) + '" r="2.6"/>';
+  });
+
+  /* Primera y última fecha */
+  svg += '<text x="' + ML + '" y="' + (H-6) + '">' + fechaCorta(puntos[0].fecha) + '</text>'
+       + '<text x="' + (W-MR) + '" y="' + (H-6) + '" text-anchor="end">'
+       + fechaCorta(puntos[puntos.length-1].fecha) + '</text>';
+
+  return svg + '</svg>';
+}
+
+function archiva(id){
+  var e = ejercicioPorId(id); if(!e) return;
+  e.archivado = !e.archivado;
+  guardar(); pinta();
+}
+
+function borraEjercicio(id){
+  var e = ejercicioPorId(id); if(!e) return;
+  var n = historialDe(id).length;
+  if(!confirm("El ejercicio desaparecerá de la biblioteca y de tus rutinas. Tus "
+    + n + " registros en el historial se conservan. Si solo quieres quitarlo de "
+    + "las listas, archívalo.\n\n¿Eliminar «" + e.nombre + "»?")) return;
+
+  /* Fuera su id de las rutinas, o seguirían contándolo. */
+  datos.rutinas.forEach(function(r){
+    r.ejercicioIds = r.ejercicioIds.filter(function(x){ return x !== id; });
+  });
+  datos.ejercicios = datos.ejercicios.filter(function(x){ return x.id !== id; });
+  guardar(); volver();
+}
+
+/* ==========================================================================
+   PANTALLA: HISTORIAL
+   ========================================================================== */
+
+function pantallaHistorial(){
+  var lista = terminados();
+  var h = '<div class="cabecera"><h1>Historial</h1>'
+        + '<button class="icono-btn" onclick="ir(pantallaAjustes)" aria-label="Ajustes">⚙</button></div>';
+
+  if(!lista.length){
+    return h + vacio("🗓","Sin entrenos todavía",
+      "Cuando termines tu primer entreno aparecerá aquí, y se quedará para siempre.");
+  }
+
+  var mesActual = null;
+  lista.forEach(function(e){
+    var mes = mesDe(e.inicio);
+    if(mes !== mesActual){
+      if(mesActual !== null) h += '</div>';
+      mesActual = mes;
+      h += '<div class="seccion">' + mes + '</div><div class="lista">';
+    }
+    h += '<button class="item" onclick="verEntreno(\'' + e.id + '\')">'
+       + '<span class="crece">'
+       +   '<span class="fila"><span class="crece" style="font-size:17px;font-weight:600">'
+       +     esc(e.nombreRutina) + '</span>'
+       +   '<span class="etiqueta">' + fechaCorta(e.inicio) + '</span></span>'
+       +   '<span class="etiqueta">' + e.ejercicios.length + ' ejercicios, '
+       +     totalSeries(e) + ' series, ' + textoVolumen(volumenEntreno(e)) + '</span>'
+       + '</span></button>';
+  });
+  return h + '</div>';
+}
+
+function verEntreno(id){
+  ir(function(){ return pantallaDetalleEntreno(id); });
+}
+
+function pantallaDetalleEntreno(id){
+  var e = entrenoPorId(id);
+  if(!e) return '<div class="cabecera"><button class="atras" onclick="volver()">‹ Atrás</button></div>';
+
+  var h = '<div class="cabecera">'
+        + '<button class="atras" onclick="volver()">‹ Historial</button>'
+        + '<h1 style="font-size:20px" class="corte">' + esc(e.nombreRutina) + '</h1></div>';
+
+  h += '<div class="tarjeta p18">'
+     + '<div class="suave" style="margin-bottom:12px">' + fechaLarga(e.inicio) + '</div>'
+     + datosFila([
+         ["Series", String(totalSeries(e))],
+         ["Volumen", textoVolumen(volumenEntreno(e))],
+         ["Duración", textoDuracion((e.fin||e.inicio) - e.inicio)]
+       ])
+     + '</div>';
+
+  ordenados(e.ejercicios).forEach(function(r){
+    h += '<div class="tarjeta">'
+       + '<div class="fila" style="margin-bottom:8px">'
+       +   '<span class="crece" style="font-size:17px;font-weight:600">' + esc(r.nombreEjercicio) + '</span>'
+       +   '<span class="etiqueta">' + textoVolumen(volumenRegistro(r)) + '</span>'
+       + '</div>';
+    ordenados(r.series).forEach(function(s, i){
+      h += '<div class="fila" style="gap:12px;padding:3px 0">'
+         + '<span class="n-peq num suave" style="width:16px;text-align:right">' + (i+1) + '</span>'
+         + '<span class="n-medio num">' + resumenSerie(s) + '</span>'
+         + (s.rir != null ? '<span class="etiqueta">RIR ' + s.rir + '</span>' : "")
+         + '</div>';
+    });
+    h += '</div>';
+  });
+
+  h += '<div class="campo"><label>Notas</label>'
+     + '<textarea class="texto-campo" rows="3" placeholder="Cómo fue el día, molestias, lo que sea" '
+     + 'onchange="notasEntreno(\'' + id + '\', this.value)">' + esc(e.notas) + '</textarea></div>';
+
+  h += '<button class="btn peligro" onclick="borraEntreno(\'' + id + '\')">Eliminar este entreno</button>';
+  return h;
+}
+
+function notasEntreno(id, v){
+  var e = entrenoPorId(id); if(!e) return;
+  e.notas = v; guardar();
+}
+function borraEntreno(id){
+  var e = entrenoPorId(id); if(!e) return;
+  if(!confirm("Se borrarán los " + totalSeries(e) + " registros de esta sesión. No se puede deshacer.")) return;
+  datos.entrenos = datos.entrenos.filter(function(x){ return x.id !== id; });
+  guardar(); volver();
+}
+
+/* ==========================================================================
+   PANTALLA: AJUSTES Y COPIAS
+
+   Lo único que no tenía la versión nativa, y la pieza que hace que confiar
+   en el almacenamiento del navegador sea razonable: poder sacar todo a un
+   archivo y volver a meterlo.
+   ========================================================================== */
+
+function pantallaAjustes(){
+  var nSesiones = terminados().length;
+  return '<div class="cabecera">'
+    + '<button class="atras" onclick="volver()">‹ Historial</button>'
+    + '<h1 style="font-size:22px">Ajustes</h1></div>'
+
+    + '<div class="tarjeta p18">'
+    + '<div class="titulo" style="margin-bottom:8px">Copia de seguridad</div>'
+    + '<p class="suave" style="margin:0 0 14px">Tus datos viven solo en este teléfono. '
+    + 'Exporta de vez en cuando y guarda el archivo donde quieras: es lo único que te '
+    + 'protege de perderlo todo si borras los datos del navegador o cambias de móvil.</p>'
+    + datosFila([
+        ["Entrenos", String(nSesiones)],
+        ["Ejercicios", String(datos.ejercicios.length)],
+        ["Rutinas", String(datos.rutinas.length)]
+      ])
+    + '<button class="btn" style="margin-top:16px" onclick="exporta()">Exportar a un archivo</button>'
+    + '<button class="btn sec" style="margin-top:8px" onclick="document.getElementById(\'importar\').click()">'
+    +   'Importar desde un archivo</button>'
+    + '<input type="file" id="importar" accept=".json,application/json" style="display:none" '
+    +   'onchange="importa(this)">'
+    + '</div>'
+
+    + '<div class="tarjeta p18">'
+    + '<div class="titulo" style="margin-bottom:8px">Empezar de cero</div>'
+    + '<p class="suave" style="margin:0 0 14px">Borra todo: ejercicios, rutinas e historial. '
+    + 'Exporta antes si hay algo que quieras conservar.</p>'
+    + '<button class="btn peligro" onclick="borraTodo()">Borrar todos mis datos</button>'
+    + '</div>';
+}
+
+function exporta(){
+  var texto = JSON.stringify(datos, null, 2);
+  var d = new Date();
+  var pad = function(n){ return n < 10 ? "0"+n : n; };
+  var nombre = "gymlog-" + d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) + ".json";
+  var blob = new Blob([texto], { type:"application/json" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+
+function importa(input){
+  var f = input.files && input.files[0];
+  if(!f) return;
+  var lector = new FileReader();
+  lector.onload = function(){
+    try{
+      var d = JSON.parse(lector.result);
+      if(!d || !d.ejercicios || !d.rutinas || !d.entrenos)
+        throw new Error("El archivo no tiene la forma esperada");
+      if(!confirm("Se sustituirán tus datos actuales por los del archivo: "
+        + d.entrenos.length + " entrenos y " + d.ejercicios.length + " ejercicios. ¿Seguir?")) return;
+      datos = d;
+      guardar();
+      vista.pila = [];
+      pinta();
+      alert("Datos importados.");
+    }catch(err){
+      alert("No he podido leer ese archivo: " + err.message);
+    }
+  };
+  lector.readAsText(f);
+  input.value = "";
+}
+
+function borraTodo(){
+  if(!confirm("Se borrará TODO y no se puede deshacer. ¿Seguro?")) return;
+  if(!confirm("Última confirmación: ¿borrar todos los datos?")) return;
+  datos = { version:1, ejercicios:[], rutinas:[], entrenos:[] };
+  sembrar(); guardar();
+  vista.pila = []; pinta();
+}
+
+/* ==========================================================================
+   AUXILIARES Y ARRANQUE
+   ========================================================================== */
+
+function vacio(icono, titulo, texto){
+  return '<div class="vacio"><div class="g">' + icono + '</div>'
+       + '<h3>' + titulo + '</h3><p>' + texto + '</p></div>';
+}
+
+/* Aviso antes de cerrar si hay un entreno a medias */
+window.addEventListener("beforeunload", function(ev){
+  if(entrenoActivo() && totalSeries(entrenoActivo()) > 0){
+    ev.preventDefault(); ev.returnValue = "";
+  }
+});
+
+cargar();
+pinta();
+
+/* Si hay un entreno sin terminar al abrir, entro directo a él. */
+if(entrenoActivo()) abreSesion();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){ /* sin conexión no pasa nada */ });
+  });
+}
+</script>
+</body>
+</html>
